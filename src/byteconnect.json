@@ -1,0 +1,51 @@
+{
+  "name": "ByteConnect Node",
+  "description": "ByteConnect Plugin runs the ByteConnect SDK binary on your AYDO hub, enabling point rewards for sharing your bandwidth securely via secure gateway communication.",
+  "type": 5,
+  "icon": "hub",
+  "class_name": "byteconnect",
+  "module": "byteconnect",
+  "cloud": true,
+  "support_autoupdate": true,
+  "autoupdate_interval": 15000,
+  "mac_address": true,
+  "standalone": true,
+  "capabilities": [
+    {
+      "ident": "traffic"
+    }
+  ],
+  "sort_index": 6,
+  "preview": true,
+  "power_switch": true,
+  "commands": [
+    {
+      "command": "preview"
+    },
+    {
+      "command": "start"
+    },
+    {
+      "command": "stop"
+    }
+  ],
+  "display": [
+    {
+      "functions": [
+        {
+          "view": "bandwidth",
+          "type": "bandwidth"
+        }
+      ]
+    }
+  ],
+  "settings": [
+    {
+      "key": "location",
+      "name": "Location",
+      "type": "google-map",
+      "required": false
+    }
+  ]
+}
+

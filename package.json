@@ -1,6 +1,6 @@
 {
   "name": "byteconnect",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "AYDO ByConnect Plugin - SDK binary for bandwidth sharing with point rewards",
   "main": "src/byteconnect.ts",
   "scripts": {
@@ -33,4 +33,3 @@
   "author": "AYDO",
   "license": "GPL-3.0"
 }
-

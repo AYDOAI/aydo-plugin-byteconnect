@@ -170,6 +170,35 @@ class ByteConnect extends baseDriverModule {
     return aydoByteConnectProcess && !aydoByteConnectProcess.killed;
   }
 
+  private isShuttingDown = false;
+
+  stopService(): void {
+    if (this.isShuttingDown) {
+      return;
+    }
+    this.isShuttingDown = true;
+    
+    this.app.log('Stopping ByteConnect service...');
+    
+    if (this.trafficMonitorInterval) {
+      clearInterval(this.trafficMonitorInterval);
+      this.trafficMonitorInterval = null;
+    }
+
+    if (aydoByteConnectProcess) {
+      aydoByteConnectProcess.kill('SIGTERM');
+    }
+
+    const {execSync} = require('child_process');
+    try {
+      execSync(`pkill -f "${this.binaryName}"`, {stdio: 'ignore'});
+    } catch (e) {
+    }
+
+    this.sessionStartTime = null;
+    this.app.log('ByteConnect service stopped');
+  }
+
   checkRun() {
     const ps = require('ps-node');
 
@@ -269,25 +298,26 @@ class ByteConnect extends baseDriverModule {
   }
 }
 
-process.on('SIGTERM', () => {
-  console.log('SIGTERM signal received. Terminating all processes.');
+const app = new ByteConnect();
+app.logging = true;
 
-  if (aydoByteConnectProcess) {
-    aydoByteConnectProcess.kill('SIGTERM');
-
-    aydoByteConnectProcess.on('exit', () => {
-      console.log('ByteConnect process terminated. Terminating application.');
-      process.exit(0);
-    });
-  } else {
+const shutdown = (signal: string) => {
+  console.log(`${signal} signal received. Terminating all processes.`);
+  app.stopService();
+  setTimeout(() => {
     process.exit(0);
-  }
+  }, 1000);
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+
+process.on('exit', () => {
+  app.stopService();
 });
 
 process.on('uncaughtException', (err) => {
   console.error(`${err ? err.message : inspect(err)}`);
+  app.stopService();
 });
-
-const app = new ByteConnect();
-app.logging = true;
 

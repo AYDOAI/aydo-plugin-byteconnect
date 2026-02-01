@@ -6,7 +6,7 @@ const os = require('os');
 const path = require('path');
 const fs = require('fs');
 
-const byteconnectDir = path.join(os.homedir(), '.aydo', 'byteconnect').replace(/\\/g, '/');;
+const byteconnectDir = path.join(os.homedir(), '.aydo', 'server', 'plugins').replace(/\\/g, '/');;
 
 let aydoByteConnectProcess: any;
 

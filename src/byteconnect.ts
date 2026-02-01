@@ -5,7 +5,8 @@ import {ByteConnectStatsService} from './services/byteconnect-stats.service';
 const os = require('os');
 const path = require('path');
 const fs = require('fs');
-const byteconnectDir = path.join(os.homedir(), '.aydo', 'byteconnect').replace(/\\/g, '/');
+
+const byteconnectDir = __dirname.replace(/\\/g, '/');
 
 let aydoByteConnectProcess: any;
 
@@ -22,25 +23,25 @@ class ByteConnect extends baseDriverModule {
 
   installDeviceEx(resolve, reject) {
     const platform = os.platform();
-    const arch = os.arch();
 
     if (platform !== 'linux') {
       this.app.log('ByteConnect SDK only supports Ubuntu Linux');
       return reject(new Error('ByteConnect SDK only supports Ubuntu Linux'));
     }
 
-    if (fs.existsSync(`${this.byteconnectDir}/${this.binaryName}`)) {
-      this.app.log('ByteConnect already installed');
+    // Проверяем наличие бинарника прямо в текущей папке
+    const binaryPath = path.join(this.byteconnectDir, this.binaryName);
+
+    if (fs.existsSync(binaryPath)) {
+      this.app.log('ByteConnect binary found in plugin directory');
       return resolve({});
     }
 
     super.installDeviceEx(() => {
-      fs.mkdirSync(this.byteconnectDir, {recursive: true});
-      
-      this.app.log('ByteConnect binary needs to be placed manually');
-      this.app.log(`Please copy the byteconnect binary to: ${this.byteconnectDir}/${this.binaryName}`);
+      this.app.log('ByteConnect binary not found!');
+      this.app.log(`Please place the '${this.binaryName}' binary into: ${this.byteconnectDir}`);
       this.app.log('The SDK is provided as a static binary for Ubuntu Linux');
-      
+
       resolve({});
     }, reject);
   }
@@ -48,13 +49,19 @@ class ByteConnect extends baseDriverModule {
   initDeviceEx(resolve, reject) {
     this.log('initDeviceEx-try');
 
-    if (fs.existsSync(`${this.byteconnectDir}/${this.binaryName}`) === false) {
+    const binaryPath = path.join(this.byteconnectDir, this.binaryName);
+
+    if (!fs.existsSync(binaryPath)) {
       this.app.log('ByteConnect binary not found');
       this.app.log(`Please copy the binary to: ${this.byteconnectDir}/${this.binaryName}`);
       return resolve({});
     }
 
-    fs.chmodSync(`${this.byteconnectDir}/${this.binaryName}`, '755');
+    try {
+      fs.chmodSync(binaryPath, '755');
+    } catch (e) {
+      this.app.log(`Warning: Could not set executable permissions: ${e.message}`);
+    }
 
     super.initDeviceEx(() => {
       this.statsService = new ByteConnectStatsService();
@@ -78,10 +85,11 @@ class ByteConnect extends baseDriverModule {
   }
 
   startService(): void {
-    this.app.log('ByteConnect will be started');
+    this.app.log('ByteConnect starting from local directory...');
 
     const {spawn} = require('child_process');
-    
+    const binaryPath = path.join(this.byteconnectDir, this.binaryName);
+
     const env = {
       ...process.env,
       DAEMONIZE: '1',
@@ -89,20 +97,20 @@ class ByteConnect extends baseDriverModule {
     };
 
     aydoByteConnectProcess = spawn(
-      `${this.byteconnectDir}/${this.binaryName}`,
-      [],
-      {
-        shell: true,
-        env: env,
-        cwd: this.byteconnectDir
-      }
+        binaryPath,
+        [],
+        {
+          shell: true,
+          env: env,
+          cwd: this.byteconnectDir // Запуск из текущей папки
+        }
     );
 
     this.sessionStartTime = Date.now();
     this.totalBytesTransferred = 0;
 
     if (this.logging) {
-      this.app.log('ByteConnect was started');
+      this.app.log('ByteConnect process spawned');
     }
 
     aydoByteConnectProcess.stdout.on('data', (data: any) => {
@@ -111,11 +119,11 @@ class ByteConnect extends baseDriverModule {
     });
 
     aydoByteConnectProcess.stderr.on('data', (data: any) => {
-      console.error(`BYTECONNECT: ${data}`);
+      console.error(`BYTECONNECT ERR: ${data}`);
     });
 
     aydoByteConnectProcess.on('close', (code: any) => {
-      console.log(`BYTECONNECT: exited with code - ${code}`);
+      console.log(`BYTECONNECT: exited with code ${code}`);
       this.sessionStartTime = null;
     });
   }

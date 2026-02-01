@@ -205,13 +205,14 @@ class ByteConnect extends baseDriverModule {
     ps.lookup({
       command: `${this.byteconnectDir}/${this.binaryName}`,
       psargs: ''
-    }, function (err, resultList) {
+    }, (err, resultList) => {
       if (err) {
-        throw new Error(err);
+        console.error('checkRun error:', err);
+        return;
       }
 
-      resultList.forEach(function (process) {
-        if (process && process.command === `${this.byteconnectDir}/${this.binaryName}`) {
+      resultList.forEach((proc) => {
+        if (proc && proc.command === `${this.byteconnectDir}/${this.binaryName}`) {
           return true;
         }
       });
@@ -317,7 +318,6 @@ process.on('exit', () => {
 });
 
 process.on('uncaughtException', (err) => {
-  console.error(`${err ? err.message : inspect(err)}`);
-  app.stopService();
+  console.error(`uncaughtException: ${err ? err.message : inspect(err)}`);
 });
 
